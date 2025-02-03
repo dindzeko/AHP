@@ -1,6 +1,9 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
 
 class AHPApp:
     def __init__(self):
@@ -142,19 +145,66 @@ class AHPApp:
             CI = (lambda_max - n) / (n - 1)
             RI = {1: 0, 2: 0, 3: 0.58, 4: 0.9, 5: 1.12, 6: 1.24, 7: 1.32, 8: 1.41, 9: 1.45, 10: 1.49}.get(n, 1.49)
             CR = CI / RI
+
+            # Store results
+            priority_df = pd.DataFrame({"Kriteria": self.criteria_list, "Bobot": weights})
+
+            # Display results
             st.subheader("Hasil Perhitungan")
             st.write("Matriks Perbandingan:")
             st.dataframe(pd.DataFrame(matrix, columns=self.criteria_list, index=self.criteria_list))
             st.write("Prioritas Kriteria:")
-            priority_df = pd.DataFrame({"Kriteria": self.criteria_list, "Bobot": weights})
             st.dataframe(priority_df)
             st.write(f"Consistency Ratio (CR): {CR:.4f}")
             if CR < 0.1:
                 st.success("Konsisten (CR < 0.1)")
             else:
                 st.error("Tidak Konsisten (CR >= 0.1)")
+
+            # Visualizations
+            self.visualize_results(priority_df, matrix)
+
         except Exception as e:
             st.error(f"Error: {str(e)}")
+
+    def visualize_results(self, priority_df, matrix):
+        st.subheader("Visualisasi Hasil")
+
+        # 1. Bar Chart
+        st.write("Bar Chart Prioritas Kriteria:")
+        fig, ax = plt.subplots()
+        ax.barh(priority_df["Kriteria"], priority_df["Bobot"], color="skyblue")
+        ax.set_xlabel("Bobot")
+        ax.set_title("Prioritas Kriteria")
+        st.pyplot(fig)
+
+        # 2. Pie Chart
+        st.write("Pie Chart Proporsi Prioritas:")
+        fig, ax = plt.subplots()
+        ax.pie(priority_df["Bobot"], labels=priority_df["Kriteria"], autopct="%1.1f%%", startangle=90)
+        ax.set_title("Proporsi Prioritas Kriteria")
+        st.pyplot(fig)
+
+        # 3. Heatmap
+        st.write("Heatmap Matriks Perbandingan:")
+        fig, ax = plt.subplots()
+        sns.heatmap(matrix, annot=True, cmap="coolwarm", xticklabels=self.criteria_list, yticklabels=self.criteria_list, ax=ax)
+        ax.set_title("Heatmap Matriks Perbandingan")
+        st.pyplot(fig)
+
+        # 4. Radar Chart
+        st.write("Radar Chart Prioritas Kriteria:")
+        fig = px.line_polar(priority_df, r="Bobot", theta="Kriteria", line_close=True)
+        fig.update_traces(fill='toself')
+        st.plotly_chart(fig)
+
+        # 5. Line Chart
+        st.write("Line Chart Prioritas Kriteria:")
+        fig, ax = plt.subplots()
+        ax.plot(priority_df["Kriteria"], priority_df["Bobot"], marker="o", color="green")
+        ax.set_title("Line Chart Prioritas Kriteria")
+        ax.set_ylabel("Bobot")
+        st.pyplot(fig)
 
 
 def main():
