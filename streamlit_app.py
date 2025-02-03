@@ -8,7 +8,6 @@ class AHPApp:
         self.comparisons = []
         self.added_pairs = set()
         self.criteria_list = []
-        self.current_edit_index = None  # To track the index of the comparison being edited
 
     def initialize_gui(self):
         # Initialize session state variables
@@ -72,51 +71,22 @@ class AHPApp:
             self.comparisons = st.session_state.get("comparisons", [])
             self.added_pairs = st.session_state.get("added_pairs", set())
 
-            # Display comparison list with edit buttons
+            # Display comparison list with delete buttons
             if self.comparisons:
                 st.subheader("Daftar Perbandingan")
                 for i, comp in enumerate(self.comparisons):
-                    col1, col2, col3 = st.columns([4, 4, 2])
+                    col1, col2 = st.columns([5, 1])
                     with col1:
-                        st.write(f"{comp['a']} vs {comp['b']}")
+                        st.write(f"{comp['a']} vs {comp['b']}: Skala {comp['scale']}, Lebih Penting: {comp['more']}")
                     with col2:
-                        st.write(f"Skala: {comp['scale']}, Lebih Penting: {comp['more']}")
-                    with col3:
-                        if st.button(f"Edit {i}", key=f"edit_{i}"):
-                            self.current_edit_index = i
-                            st.session_state["current_edit_index"] = i
+                        if st.button(f"Hapus {i}", key=f"delete_{i}"):
+                            # Remove the comparison
+                            pair = frozenset({comp["a"], comp["b"]})
+                            self.comparisons.pop(i)
+                            self.added_pairs.remove(pair)
+                            st.session_state["comparisons"] = self.comparisons
+                            st.session_state["added_pairs"] = self.added_pairs
                             st.rerun()
-
-            # If in edit mode, display the edit form
-            if self.current_edit_index is not None:
-                st.subheader("Edit Perbandingan")
-                comp_to_edit = self.comparisons[self.current_edit_index]
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    crit_a = st.selectbox("Kriteria A", self.criteria_list, index=self.criteria_list.index(comp_to_edit["a"]))
-                with col2:
-                    crit_b = st.selectbox("Kriteria B", [c for c in self.criteria_list if c != crit_a], index=[c for c in self.criteria_list if c != crit_a].index(comp_to_edit["b"]))
-                with col3:
-                    scale = st.selectbox("Skala Keutamaan", list(range(1, 10)), index=comp_to_edit["scale"] - 1)
-                more_important = st.radio("Mana yang lebih penting?", [crit_a, crit_b], index=0 if comp_to_edit["more"] == crit_a else 1)
-
-                if st.button("Simpan Perubahan"):
-                    # Update the comparison
-                    self.comparisons[self.current_edit_index] = {
-                        "a": crit_a,
-                        "b": crit_b,
-                        "more": more_important,
-                        "scale": scale
-                    }
-                    st.session_state["comparisons"] = self.comparisons
-                    self.current_edit_index = None
-                    st.session_state["current_edit_index"] = None
-                    st.rerun()
-
-                if st.button("Batal"):
-                    self.current_edit_index = None
-                    st.session_state["current_edit_index"] = None
-                    st.rerun()
 
             # Add new comparison
             st.subheader("Tambah Perbandingan Baru")
